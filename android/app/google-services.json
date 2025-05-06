@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "237894306242",
+    "project_id": "periodtime-7134a",
+    "storage_bucket": "periodtime-7134a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:237894306242:android:91f06724cfa81b8a92ee5b",
+        "android_client_info": {
+          "package_name": "com.example.periodtime"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfTuX1zzIa1796cGchSE80UNFGmPRF2l8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
