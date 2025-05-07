@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ProfileRepository {
   final TextEditingController usernameController = TextEditingController();
@@ -14,7 +15,13 @@ class ProfileRepository {
   String? imagePath;
   File? newImageFile;
 
-  /// Loads the current user’s profile data from Firestore.
+  Future<void> pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      newImageFile = File(picked.path);
+    }
+  }
+
   Future<void> loadUserData() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -29,20 +36,10 @@ class ProfileRepository {
       gender = data['gender'] ?? '';
       dob = DateTime.tryParse(data['dob'] ?? '');
       imagePath = data['imagePath'];
-
     }
   }
 
-  /// Saves the profile. If [newImageFile] is non-null, uploads it and sets `imagePath` to its URL.
-  Future<void> saveProfile({
-    required String username,
-    required String phone,
-    required String email,
-    String? gender,
-    DateTime? dob,
-    String? existingImagePath,
-    File? newImageFile,
-  }) async {
+  Future<void> saveProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
@@ -51,8 +48,7 @@ class ProfileRepository {
       'phone': phoneController.text.trim(),
       'gender': gender,
       'dob': dob?.toIso8601String(),
-      if (newImageFile != null) 'imagePath': newImageFile.path,
+      if (newImageFile != null) 'imagePath': newImageFile!.path,
     });
   }
 }
-

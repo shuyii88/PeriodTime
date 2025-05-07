@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'profile_repository.dart';
 
 class SettingPage extends StatefulWidget {
   @override
@@ -10,19 +11,18 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
-  final TextEditingController usernameController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-
-  String? gender;
-  DateTime? dob;
-  String? imagePath;
-  File? newImageFile;
-
+  final ProfileRepository _profileRepository = ProfileRepository();
   bool isLoading = true;
-
   bool notificationsEnabled = true;
   final TextEditingController feedbackController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _profileRepository.loadUserData().then((_) {
+      setState(() => isLoading = false);
+    });
+  }
 
   Future<void> changePassword() async {
     final currentPasswordController = TextEditingController();
@@ -30,53 +30,56 @@ class _SettingPageState extends State<SettingPage> {
 
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text("Change Password"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentPasswordController,
-              decoration: InputDecoration(labelText: "Current Password"),
-              obscureText: true,
+      builder:
+          (_) => AlertDialog(
+            title: Text("Change Password"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: currentPasswordController,
+                  decoration: InputDecoration(labelText: "Current Password"),
+                  obscureText: true,
+                ),
+                TextField(
+                  controller: newPasswordController,
+                  decoration: InputDecoration(labelText: "New Password"),
+                  obscureText: true,
+                ),
+              ],
             ),
-            TextField(
-              controller: newPasswordController,
-              decoration: InputDecoration(labelText: "New Password"),
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                final user = FirebaseAuth.instance.currentUser;
-                final cred = EmailAuthProvider.credential(
-                  email: user!.email!,
-                  password: currentPasswordController.text,
-                );
-                await user.reauthenticateWithCredential(cred);
-                await user.updatePassword(newPasswordController.text);
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  try {
+                    final user = FirebaseAuth.instance.currentUser;
+                    final cred = EmailAuthProvider.credential(
+                      email: user!.email!,
+                      password: currentPasswordController.text,
+                    );
+                    await user.reauthenticateWithCredential(cred);
+                    await user.updatePassword(newPasswordController.text);
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Password updated successfully")),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Failed to update password: $e")),
-                );
-              }
-            },
-            child: Text("Update"),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Password updated successfully")),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Failed to update password: $e")),
+                    );
+                  }
+                },
+                child: Text("Update"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
-
 
   Future<void> submitFeedback() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -92,9 +95,9 @@ class _SettingPageState extends State<SettingPage> {
     });
 
     feedbackController.clear();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Feedback submitted. Thank you!')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Feedback submitted. Thank you!')));
   }
 
   void logout() async {
@@ -108,7 +111,9 @@ class _SettingPageState extends State<SettingPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Are you sure?"),
-          content: Text("This action will delete your account permanently. You cannot undo this action."),
+          content: Text(
+            "This action will delete your account permanently. You cannot undo this action.",
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -117,29 +122,32 @@ class _SettingPageState extends State<SettingPage> {
               child: Text("Cancel"),
             ),
             TextButton(
-        onPressed: () async {
-        final navigator = Navigator.of(context);
-        final scaffoldMessenger = ScaffoldMessenger.of(context);
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-        navigator.pop(); // Close the dialog
+                navigator.pop(); // Close the dialog
 
-        try {
-        final user = FirebaseAuth.instance.currentUser;
-        final uid = user?.uid;
+                try {
+                  final user = FirebaseAuth.instance.currentUser;
+                  final uid = user?.uid;
 
-        if (uid != null) {
-        await FirebaseFirestore.instance.collection('User').doc(uid).delete();
-        await user!.delete();
+                  if (uid != null) {
+                    await FirebaseFirestore.instance
+                        .collection('User')
+                        .doc(uid)
+                        .delete();
+                    await user!.delete();
 
-        // Avoid using context after an async gap
-        navigator.pushReplacementNamed('/login');
-        }
-        } catch (e) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(content: Text("Error deleting account: $e")),
-          );
-        }
-      },
+                    // Avoid using context after an async gap
+                    navigator.pushReplacementNamed('/login');
+                  }
+                } catch (e) {
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(content: Text("Error deleting account: $e")),
+                  );
+                }
+              },
               child: Text("Delete Account"),
             ),
           ],
@@ -148,55 +156,11 @@ class _SettingPageState extends State<SettingPage> {
     );
   }
 
-
-  @override
-  void initState() {
-    super.initState();
-    loadUserData();
-  }
-
-  Future<void> loadUserData() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    final doc = await FirebaseFirestore.instance.collection('User').doc(uid).get();
-
-    if (doc.exists) {
-      final data = doc.data()!;
-      setState(() {
-        usernameController.text = data['username'] ?? '';
-        phoneController.text = data['phone'] ?? '';
-        emailController.text = data['email'] ?? '';
-        gender = data['gender'] ?? '';
-        dob = DateTime.tryParse(data['dob'] ?? '');
-        imagePath = data['imagePath'];
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> pickImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => newImageFile = File(picked.path));
-    }
-  }
-
   Future<void> saveChanges() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    await FirebaseFirestore.instance.collection('User').doc(uid).update({
-      'username': usernameController.text.trim(),
-      'phone': phoneController.text.trim(),
-      'gender': gender,
-      'dob': dob?.toIso8601String(),
-      if (newImageFile != null) 'imagePath': newImageFile!.path,
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Profile updated")),
-    );
+    await _profileRepository.saveProfile();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("Profile updated")));
   }
 
   @override
@@ -210,83 +174,75 @@ class _SettingPageState extends State<SettingPage> {
         backgroundColor: Colors.deepPurple,
       ),
       body: SingleChildScrollView(
-
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             GestureDetector(
-              onTap: pickImage,
+              onTap: () async {
+                await _profileRepository.pickImage();
+                setState(() {});
+              },
               child: CircleAvatar(
                 radius: 60,
-                backgroundImage: newImageFile != null
-                    ? FileImage(newImageFile!)
-                    : (imagePath != null && File(imagePath!).existsSync()
-                    ? FileImage(File(imagePath!))
-                    : AssetImage('assets/images/placeholder.png') as ImageProvider),
+                backgroundImage:
+                    _profileRepository.newImageFile != null
+                        ? FileImage(_profileRepository.newImageFile!)
+                        : (_profileRepository.imagePath != null &&
+                                File(_profileRepository.imagePath!).existsSync()
+                            ? FileImage(File(_profileRepository.imagePath!))
+                            : AssetImage('assets/image.jpeg') as ImageProvider),
               ),
             ),
             SizedBox(height: 20),
             TextField(
-              controller: usernameController,
+              controller: _profileRepository.usernameController,
               decoration: InputDecoration(labelText: 'Username'),
             ),
             TextField(
-              controller: emailController,
+              controller: _profileRepository.emailController,
               enabled: false,
               decoration: InputDecoration(labelText: 'Email'),
             ),
             TextField(
-              controller: phoneController,
+              controller: _profileRepository.phoneController,
               decoration: InputDecoration(labelText: 'Phone'),
               keyboardType: TextInputType.phone,
             ),
             DropdownButtonFormField<String>(
-              value: gender,
+              value: _profileRepository.gender,
               decoration: InputDecoration(labelText: 'Gender'),
-              items: ['Male', 'Female']
-                  .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                  .toList(),
-              onChanged: (value) => setState(() => gender = value),
+              items:
+                  ['Male', 'Female']
+                      .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                      .toList(),
+              onChanged:
+                  (value) => setState(() => _profileRepository.gender = value),
             ),
             SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  "Date of Birth: ${dob != null ? dob!.toLocal().toString().split(' ')[0] : 'Not set'}",
+                  "Date of Birth: ${_profileRepository.dob != null ? _profileRepository.dob!.toLocal().toString().split(' ')[0] : 'Not set'}",
                   style: TextStyle(fontSize: 16),
                 ),
                 ElevatedButton(
                   onPressed: () async {
                     final pickedDate = await showDatePicker(
                       context: context,
-                      initialDate: dob ?? DateTime(2000),
+                      initialDate: _profileRepository.dob ?? DateTime(2000),
                       firstDate: DateTime(1900),
                       lastDate: DateTime.now(),
                     );
                     if (pickedDate != null) {
-                      setState(() => dob = pickedDate);
+                      setState(() => _profileRepository.dob = pickedDate);
                     }
                   },
                   child: Text('Edit DOB'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                  ),
                 ),
               ],
             ),
-
-            SizedBox(height: 20),
-            ElevatedButton(
-
-              onPressed: saveChanges,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple,foregroundColor: Colors.white),
-
-              child: Text("Save Changes"),
-            ),
+            ElevatedButton(onPressed: saveChanges, child: Text("Save Changes")),
             ElevatedButton(
               onPressed: changePassword,
               style: ElevatedButton.styleFrom(
@@ -305,13 +261,10 @@ class _SettingPageState extends State<SettingPage> {
                 setState(() {
                   notificationsEnabled = value;
                 });
-
               },
             ),
 
-
             SizedBox(height: 20),
-
 
             Text("Feedback", style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(
@@ -334,7 +287,6 @@ class _SettingPageState extends State<SettingPage> {
             ),
 
             SizedBox(height: 30),
-
 
             // Logout Button
             ElevatedButton(
