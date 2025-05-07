@@ -11,18 +11,13 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
-  final ProfileRepository _profileRepository = ProfileRepository();
+  final _profileRepository = ProfileRepository.instance;
   bool isLoading = true;
+
   bool notificationsEnabled = true;
   final TextEditingController feedbackController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _profileRepository.loadUserData().then((_) {
-      setState(() => isLoading = false);
-    });
-  }
+
 
   Future<void> changePassword() async {
     final currentPasswordController = TextEditingController();
@@ -165,7 +160,7 @@ class _SettingPageState extends State<SettingPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) return Center(child: CircularProgressIndicator());
+    //if (isLoading) return Center(child: CircularProgressIndicator());
 
     return Scaffold(
       backgroundColor: Colors.pink[100],

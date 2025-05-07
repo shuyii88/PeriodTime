@@ -1,3 +1,5 @@
+// profile_repository.dart
+
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfileRepository {
+  // 1️⃣ Private constructor
+  ProfileRepository._();
+
+  // 2️⃣ The single, global instance
+  static final ProfileRepository instance = ProfileRepository._();
+
+  // 3️⃣ All your controllers and fields
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -27,28 +36,29 @@ class ProfileRepository {
     if (uid == null) return;
 
     final doc = await FirebaseFirestore.instance.collection('User').doc(uid).get();
+    if (!doc.exists) return;
 
-    if (doc.exists) {
-      final data = doc.data()!;
-      usernameController.text = data['username'] ?? '';
-      phoneController.text = data['phone'] ?? '';
-      emailController.text = data['email'] ?? '';
-      gender = data['gender'] ?? '';
-      dob = DateTime.tryParse(data['dob'] ?? '');
-      imagePath = data['imagePath'];
-    }
+    final data = doc.data()!;
+    usernameController.text = data['username'] ?? '';
+    phoneController.text    = data['phone'] ?? '';
+    emailController.text    = data['email'] ?? '';
+    gender                  = data['gender'];
+    dob                     = data['dob'] != null ? DateTime.parse(data['dob']) : null;
+    imagePath               = data['imagePath'];
   }
 
   Future<void> saveProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    await FirebaseFirestore.instance.collection('User').doc(uid).update({
+    final updates = {
       'username': usernameController.text.trim(),
-      'phone': phoneController.text.trim(),
-      'gender': gender,
-      'dob': dob?.toIso8601String(),
+      'phone':    phoneController.text.trim(),
+      'gender':   gender,
+      'dob':      dob?.toIso8601String(),
       if (newImageFile != null) 'imagePath': newImageFile!.path,
-    });
+    };
+
+    await FirebaseFirestore.instance.collection('User').doc(uid).update(updates);
   }
 }

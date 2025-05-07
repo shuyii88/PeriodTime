@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:periodtime/profile_repository.dart';
 import 'setting_page.dart';
 
 class MainNav extends StatefulWidget {
@@ -9,12 +10,21 @@ class MainNav extends StatefulWidget {
 class _MainNavState extends State<MainNav> {
   int _currentIndex = 0;
 
+  final ProfileRepository _profileRepository = ProfileRepository.instance;
+  bool isLoading = true;
+
   final List<Widget> _pages = [
     HomeScreen(),
     Center(child: Text('Tracker')),
     Center(child: Text('Insights')),
     SettingPage()
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _profileRepository.loadUserData().then((_) => setState(() => isLoading = false));
+  }
 
   @override
   Widget build(BuildContext context) {
