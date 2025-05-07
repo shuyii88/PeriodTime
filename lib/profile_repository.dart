@@ -8,13 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfileRepository {
-  // 1️⃣ Private constructor
+  // Private constructor
   ProfileRepository._();
 
-  // 2️⃣ The single, global instance
+  //The single, global instance
   static final ProfileRepository instance = ProfileRepository._();
 
-  // 3️⃣ All your controllers and fields
+  //All your controllers and fields
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
