@@ -33,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _backgroundColor = Colors.pink[100]!;
       });
-      Navigator.pushReplacementNamed(context, '/setting');
+      Navigator.pushReplacementNamed(context, '/mainNav');
     } catch (e) {
       setState(() {
         _backgroundColor = Colors.red[100]!;

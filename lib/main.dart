@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'mainNav.dart';
 import 'start_page.dart';
 import 'register_page.dart';
 import 'login_page.dart';
@@ -32,6 +33,7 @@ class PeriodTimeApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/completeProfile': (context) => CompleteProfilePage(),
         '/setting': (context) => SettingPage(),
+        '/mainNav': (context) => MainNav(),
       },
     );
   }
