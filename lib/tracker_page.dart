@@ -55,14 +55,6 @@ class _TrackerPageState extends State<TrackerPage> {
         leading: Icon(Icons.calendar_today, color: Colors.black), //add Icon
         title: Text('Tracker'),
         backgroundColor: Colors.pink[100],
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: CircleAvatar(
-              backgroundImage: AssetImage('assets/profile.jpg'),
-            ),
-          )
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
