@@ -21,7 +21,6 @@ class _MainNavState extends State<MainNav> {
     SettingPage(),
   ];
 
-
   @override
   void initState() {
     super.initState();
@@ -30,6 +29,8 @@ class _MainNavState extends State<MainNav> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) return Center(child: CircularProgressIndicator());
+
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(

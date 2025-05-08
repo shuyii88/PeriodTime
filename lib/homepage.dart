@@ -1,15 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:periodtime/profile_repository.dart';
+import 'dart:io';
 
-class HomePage extends StatelessWidget {
-  // Replace with your logic
-  final String userName = 'xxxxx';
-  final String avatarUrl = 'https://via.placeholder.com/150';
+import 'package:flutter/material.dart';
+import 'profile_repository.dart';
+
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final _profileRepository = ProfileRepository.instance;
+
+  //final String userName = _profileRepository.usernameController.text;
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
+    return Scaffold(
+      body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: SingleChildScrollView(
           child: Column(
@@ -20,9 +27,26 @@ class HomePage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Icon(Icons.home, size: 28, color: Colors.grey[800]),
+                  Text(
+                    'HOME',
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(avatarUrl),
+                    backgroundImage:
+                        _profileRepository.newImageFile != null
+                            ? FileImage(_profileRepository.newImageFile!)
+                            : (_profileRepository.imagePath != null &&
+                                    File(
+                                      _profileRepository.imagePath!,
+                                    ).existsSync()
+                                ? FileImage(File(_profileRepository.imagePath!))
+                                : AssetImage('assets/image.jpeg')
+                                    as ImageProvider),
                   ),
                 ],
               ),
@@ -31,7 +55,7 @@ class HomePage extends StatelessWidget {
 
               // ─── Welcome Text ─────────────────────────────────────────────
               Text(
-                'Welcome, $userName!',
+                'Welcome, ${_profileRepository.usernameController.text}!',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -55,10 +79,7 @@ class HomePage extends StatelessWidget {
                     children: [
                       Text(
                         'Current System Date',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                       SizedBox(height: 8),
                       Text(
@@ -80,12 +101,13 @@ class HomePage extends StatelessWidget {
               InfoCard(
                 title: "Today's Advice",
                 content:
-                'Stay hydrated and incorporate light exercises into your routine to ease cramps.',
+                    'Stay hydrated and incorporate light exercises into your routine to ease cramps.',
               ),
               SizedBox(height: 16),
               InfoCard(
                 title: 'Health Tip',
-                content: "Include iron-rich foods to replenish your body's nutrients.",
+                content:
+                    "Include iron-rich foods to replenish your body's nutrients.",
               ),
 
               SizedBox(height: 32),
