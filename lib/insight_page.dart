@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:periodtime/webview_page.dart';
 
 class InsightsPage extends StatelessWidget {
   final Map<String, List<Insight>> categorizedInsights = {
@@ -7,11 +7,11 @@ class InsightsPage extends StatelessWidget {
     Insight(
       title: 'Understanding Your Menstrual Cycle',
       summary: 'Learn about the four phases of your menstrual cycle and how they affect your body and mood.',
-      url: 'https://www.womenshealth.gov/menstrual-cycle/your-menstrual-cycle',
+      url: 'https://my.clevelandclinic.org/health/articles/10132-menstrual-cycle?utm_source=chatgpt.com',
       imageUrl: 'https://images.unsplash.com/photo-1516585427167-9f4af9627e6c',
     ),
   ],
-    'Health': [
+   /* 'Health': [
       Insight(
         title: '',
         summary: '',
@@ -47,7 +47,7 @@ class InsightsPage extends StatelessWidget {
           summary: '',
           url: '',
           imageUrl: '')
-    ],
+    ],*/
 };
 
   @override
@@ -95,17 +95,6 @@ class InsightCard extends StatelessWidget {
 
   InsightCard({required this.insight});
 
-  Future<void> _launchURL(BuildContext context) async {
-    final Uri uri = Uri.parse(insight.url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not launch URL')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -128,7 +117,17 @@ class InsightCard extends StatelessWidget {
                 Text(insight.summary, style: TextStyle(fontSize: 14)),
                 SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () => _launchURL(context),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                        MaterialPageRoute(
+                        builder: (context) => WebViewPage(
+                      url: insight.url,
+                      title: insight.title,
+                        ),
+                      ),
+                    );
+                  },
                   child: Text('Read More'),
                 ),
               ],
