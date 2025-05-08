@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:periodtime/profile_repository.dart';
 import 'homepage.dart';
+import 'insight_page.dart';
 import 'setting_page.dart';
 
 class MainNav extends StatefulWidget {
@@ -17,7 +18,7 @@ class _MainNavState extends State<MainNav> {
   final List<Widget> _pages = [
     HomePage(),
     Center(child: Text('Tracker')),
-    Center(child: Text('Insights')),
+    InsightsPage(),
     SettingPage(),
   ];
 
