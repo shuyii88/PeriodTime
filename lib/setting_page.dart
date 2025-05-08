@@ -162,10 +162,12 @@ class _SettingPageState extends State<SettingPage> {
     //if (isLoading) return Center(child: CircularProgressIndicator());
 
     return Scaffold(
-      backgroundColor: Colors.pink[100],
+      backgroundColor: Colors.pink[50],
       appBar: AppBar(
         title: Text("Settings"),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.pink[100],
+        automaticallyImplyLeading: false,
+        leading: Icon(Icons.settings, color: Colors.black), //add Icon
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

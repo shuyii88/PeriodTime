@@ -10,7 +10,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool keepSignedIn = true;
-  Color _backgroundColor = Colors.pink[100]!;
+  Color _backgroundColor = Colors.pink[50]!;
 
   // Function to handle login
   Future<void> _login(BuildContext context) async {
@@ -74,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: _backgroundColor,
       appBar: AppBar(
         title: Text('Log in'),
-        backgroundColor: Colors.pink[300],
+        backgroundColor: Colors.pink[100],
         iconTheme: IconThemeData(color: Colors.black),
       ),
       body: Padding(
