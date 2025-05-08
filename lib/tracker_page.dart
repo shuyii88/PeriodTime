@@ -26,12 +26,24 @@ class _TrackerPageState extends State<TrackerPage> {
     if (picked != null) {
       setState(() {
         _startDate = picked;
-        // Simple estimate: add average cycle if exists
         if (_averageCycle != null) {
           _estimateEndDate = picked.add(Duration(days: _averageCycle!));
         }
       });
     }
+  }
+
+  void _saveEntry() {
+    // Here you would persist data to a database or local storage
+    final summary = StringBuffer()
+      ..writeln('Start Date: ${_startDate != null ? _startDate!.toLocal().toString().split(' ')[0] : 'Not set'}')
+      ..writeln('Estimated End: ${_estimateEndDate != null ? _estimateEndDate!.toLocal().toString().split(' ')[0] : 'Not set'}')
+      ..writeln('Cycle Length: ${_averageCycle ?? 'Not set'} days')
+      ..writeln('Flow: $_flowIntensity')
+      ..writeln('Symptoms: ${_symptoms.entries.where((e) => e.value).map((e) => e.key).join(', ') ?? 'None'}');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Saved:\n\$summary')),);
   }
 
   @override
@@ -47,7 +59,7 @@ class _TrackerPageState extends State<TrackerPage> {
             child: CircleAvatar(
               backgroundImage: AssetImage('assets/profile.jpg'),
             ),
-          ),
+          )
         ],
       ),
       body: SingleChildScrollView(
@@ -55,142 +67,90 @@ class _TrackerPageState extends State<TrackerPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Your Period',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge!.copyWith(color: Colors.purple),
-            ),
+            Text('Your Period', style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Colors.purple)),
             SizedBox(height: 8),
             Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    _buildDateField(
-                      'Start Date',
-                      _startDate != null
-                          ? _startDate!.toLocal().toString().split(' ')[0]
-                          : 'Recorded selected date',
-                      _pickStartDate,
-                    ),
+                    _buildDateField('Start Date', _startDate != null ? _startDate!.toLocal().toString().split(' ')[0] : 'Recorded selected date', _pickStartDate),
                     SizedBox(height: 12),
-                    _buildDateField(
-                      'Estimate End Date',
-                      _estimateEndDate != null
-                          ? _estimateEndDate!.toLocal().toString().split(' ')[0]
-                          : 'Date',
-                      () {},
-                    ),
+                    _buildDateField('Estimate End Date', _estimateEndDate != null ? _estimateEndDate!.toLocal().toString().split(' ')[0] : 'Date', () {}),
                     SizedBox(height: 12),
-                    _buildTextField(
-                      'Average Period Cycle',
-                      _averageCycle != null
-                          ? '$_averageCycle Days'
-                          : 'xxx Days',
-                      (val) {
-                        final days = int.tryParse(val);
-                        if (days != null) {
-                          setState(() {
-                            _averageCycle = days;
-                            if (_startDate != null) {
-                              _estimateEndDate = _startDate!.add(
-                                Duration(days: days),
-                              );
-                            }
-                          });
-                        }
-                      },
-                    ),
+                    _buildTextField('Average Period Cycle', _averageCycle != null ? '$_averageCycle Days' : 'xxx Days', (val) {
+                      final days = int.tryParse(val);
+                      if (days != null) {
+                        setState(() {
+                          _averageCycle = days;
+                          if (_startDate != null) {
+                            _estimateEndDate = _startDate!.add(Duration(days: days));
+                          }
+                        });
+                      }
+                    }),
                   ],
                 ),
               ),
             ),
             SizedBox(height: 24),
-            Text(
-              'Flow Intensity',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium!.copyWith(color: Colors.purple),
-            ),
+            Text('Flow Intensity', style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.purple)),
             SizedBox(height: 8),
             Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children:
-                      ['Light', 'Medium', 'Heavy'].map((level) {
-                        return Column(
-                          children: [
-                            Radio<String>(
-                              value: level,
-                              groupValue: _flowIntensity,
-                              onChanged: (val) {
-                                setState(() => _flowIntensity = val!);
-                              },
-                            ),
-                            Text(level),
-                          ],
-                        );
-                      }).toList(),
+                  children: ['Light', 'Medium', 'Heavy'].map((level) {
+                    return Column(
+                      children: [
+                        Radio<String>(
+                          value: level,
+                          groupValue: _flowIntensity,
+                          onChanged: (val) {
+                            setState(() => _flowIntensity = val!);
+                          },
+                        ),
+                        Text(level),
+                      ],
+                    );
+                  }).toList(),
                 ),
               ),
             ),
             SizedBox(height: 24),
-            Text(
-              'Symptoms & Mood',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium!.copyWith(color: Colors.purple),
-            ),
+            Text('Symptoms & Mood', style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.purple)),
             SizedBox(height: 8),
             Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 12,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children:
-                      _symptoms.keys.map((sym) {
-                        return Row(
-                          children: [
-                            Checkbox(
-                              value: _symptoms[sym],
-                              onChanged: (val) {
-                                setState(() => _symptoms[sym] = val!);
-                              },
-                            ),
-                            Text(sym),
-                          ],
-                        );
-                      }).toList(),
+                  children: _symptoms.keys.map((sym) {
+                    return Row(
+                      children: [
+                        Checkbox(
+                          value: _symptoms[sym],
+                          onChanged: (val) {
+                            setState(() => _symptoms[sym] = val!);
+                          },
+                        ),
+                        Text(sym),
+                      ],
+                    );
+                  }).toList(),
                 ),
               ),
             ),
+
             SizedBox(height: 24),
-            Text(
-              'Cycle Predictions',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium!.copyWith(color: Colors.purple),
-            ),
+            Text('Cycle Predictions', style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.purple)),
             SizedBox(height: 8),
             Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -199,16 +159,9 @@ class _TrackerPageState extends State<TrackerPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Next Period:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                        Text('Next Period:', style: TextStyle(fontWeight: FontWeight.bold)),
                         SizedBox(height: 4),
-                        Text(
-                          _estimateEndDate != null
-                              ? '${_estimateEndDate!.day} ${_monthName(_estimateEndDate!)} ${_estimateEndDate!.year}'
-                              : '15th November 2025',
-                        ),
+                        Text(_estimateEndDate != null ? '${_estimateEndDate!.day} ${_monthName(_estimateEndDate!)} ${_estimateEndDate!.year}' : '15th November 2025'),
                       ],
                     ),
                     Icon(Icons.show_chart, size: 48, color: Colors.purple),
@@ -216,27 +169,21 @@ class _TrackerPageState extends State<TrackerPage> {
                 ),
               ),
             ),
+            // Save button below symptoms
+            SizedBox(height: 16),
+            Center(
+              child: ElevatedButton(
+                onPressed: _saveEntry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+                child: Text('Save Entry', style: TextStyle(color: Colors.white, fontSize: 16)),
+              ),
+            ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.purple,
-        unselectedItemColor: Colors.grey,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Tracker',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Insights',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
       ),
     );
   }
@@ -254,11 +201,7 @@ class _TrackerPageState extends State<TrackerPage> {
     );
   }
 
-  Widget _buildTextField(
-    String label,
-    String hint,
-    ValueChanged<String> onChanged,
-  ) {
+  Widget _buildTextField(String label, String hint, ValueChanged<String> onChanged) {
     return TextFormField(
       initialValue: '',
       decoration: InputDecoration(
@@ -273,18 +216,7 @@ class _TrackerPageState extends State<TrackerPage> {
 
   String _monthName(DateTime dt) {
     const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'January','February','March','April','May','June','July','August','September','October','November','December'
     ];
     return months[dt.month - 1];
   }
