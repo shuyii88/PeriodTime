@@ -11,10 +11,10 @@ class ProfileRepository {
   // Private constructor
   ProfileRepository._();
 
-  //The single, global instance
+  //Single, global instance
   static final ProfileRepository instance = ProfileRepository._();
 
-  //All your controllers and fields
+  //Controllers and fields
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
