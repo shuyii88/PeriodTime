@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:periodtime/setting_page.dart';
 import 'profile_repository.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,41 +17,19 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.pink[50],
+      appBar: AppBar(
+        automaticallyImplyLeading: false, //remove back button
+        leading: Icon(Icons.home, color: Colors.black), //add Icon
+        title: Text('Home', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.pink[100],
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ─── Header with Home Icon & Avatar ───────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(Icons.home, size: 28, color: Colors.grey[800]),
-                  Text(
-                    'HOME',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundImage:
-                        _profileRepository.newImageFile != null
-                            ? FileImage(_profileRepository.newImageFile!)
-                            : (_profileRepository.imagePath != null &&
-                                    File(
-                                      _profileRepository.imagePath!,
-                                    ).existsSync()
-                                ? FileImage(File(_profileRepository.imagePath!))
-                                : AssetImage('assets/image.jpeg')
-                                    as ImageProvider),
-                  ),
-                ],
-              ),
-
               SizedBox(height: 24),
 
               // ─── Welcome Text ─────────────────────────────────────────────
@@ -162,7 +141,7 @@ class InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.purple[100],
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -171,7 +150,7 @@ class InfoCard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: Colors.purple[800],
+              color: Colors.purple,
               fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
@@ -179,7 +158,7 @@ class InfoCard extends StatelessWidget {
           SizedBox(height: 8),
           Text(
             content,
-            style: TextStyle(fontSize: 14, color: Colors.grey[800]),
+            style: TextStyle(fontSize: 14, color: Colors.black),
           ),
         ],
       ),

@@ -51,6 +51,8 @@ class _TrackerPageState extends State<TrackerPage> {
     return Scaffold(
       backgroundColor: Colors.pink[50],
       appBar: AppBar(
+        automaticallyImplyLeading: false, //remove back button
+        leading: Icon(Icons.calendar_today, color: Colors.black), //add Icon
         title: Text('Tracker'),
         backgroundColor: Colors.pink[100],
         actions: [
@@ -176,7 +178,6 @@ class _TrackerPageState extends State<TrackerPage> {
                 onPressed: _saveEntry,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
                 child: Text('Save Entry', style: TextStyle(color: Colors.white, fontSize: 16)),
