@@ -135,7 +135,8 @@ class InsightsPage extends StatelessWidget {
         backgroundColor: Colors.pink[50],
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: Text('Period Insights'),
+          leading: Icon(Icons.favorite, color: Colors.black), //add Icon
+          title: Text('Period Insights', style: TextStyle(fontWeight: FontWeight.bold)),
           backgroundColor: Colors.pink[100],
           bottom: TabBar(
             isScrollable: true,

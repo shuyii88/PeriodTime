@@ -164,9 +164,9 @@ class _SettingPageState extends State<SettingPage> {
     return Scaffold(
       backgroundColor: Colors.pink[50],
       appBar: AppBar(
-        title: Text("Settings"),
-        backgroundColor: Colors.pink[100],
         automaticallyImplyLeading: false,
+        title: Text("Settings", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.pink[100],
         leading: Icon(Icons.settings, color: Colors.black), //add Icon
       ),
       body: SingleChildScrollView(

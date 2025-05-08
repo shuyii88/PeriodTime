@@ -1,8 +1,10 @@
-import 'dart:io';
+//import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:periodtime/setting_page.dart';
+import 'package:intl/intl.dart';
+//import 'tracker_page.dart';
 import 'profile_repository.dart';
+
 
 class HomePage extends StatefulWidget {
   @override
@@ -12,15 +14,38 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _profileRepository = ProfileRepository.instance;
 
-  //final String userName = _profileRepository.usernameController.text;
+  int? _daysUntilNextPeriod;
+  String? _lastPeriodText;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPredictionInfo();
+  }
+
+  void _loadPredictionInfo() {
+    final lastPeriod = _profileRepository.lastPeriodDate;
+    final cycleLength = _profileRepository.cycleLength;
+
+    if (lastPeriod != null && cycleLength != null) {
+      final nextPeriod = lastPeriod.add(Duration(days: cycleLength));
+      final now = DateTime.now();
+      final daysLeft = nextPeriod.difference(now).inDays;
+
+      setState(() {
+        _daysUntilNextPeriod = daysLeft;
+        _lastPeriodText = DateFormat.yMMMMd().format(lastPeriod);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.pink[50],
       appBar: AppBar(
-        automaticallyImplyLeading: false, //remove back button
-        leading: Icon(Icons.home, color: Colors.black), //add Icon
+        automaticallyImplyLeading: false,
+        leading: Icon(Icons.home, color: Colors.black),
         title: Text('Home', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.pink[100],
       ),
@@ -31,20 +56,13 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 24),
-
-              // ─── Welcome Text ─────────────────────────────────────────────
               Text(
                 'Welcome, ${_profileRepository.usernameController.text}!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[900],
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey[900]),
               ),
-
               SizedBox(height: 24),
 
-              // ─── Days Left Circle ────────────────────────────────────────
+              // Circle displaying days left
               Center(
                 child: Container(
                   width: 180,
@@ -56,16 +74,13 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Current System Date',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
-                      ),
+                      Text('Next Period In', style: TextStyle(color: Colors.white70, fontSize: 14)),
                       SizedBox(height: 8),
                       Text(
-                        '2 Days Left',
+                        _daysUntilNextPeriod != null ? '$_daysUntilNextPeriod Days' : '--',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 24,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -73,31 +88,31 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-
               SizedBox(height: 32),
 
-              // ─── Advice & Tips Cards ─────────────────────────────────────
+              // Tips
               InfoCard(
                 title: "Today's Advice",
                 content:
-                    'Stay hydrated and incorporate light exercises into your routine to ease cramps.',
+                'Stay hydrated and incorporate light exercises into your routine to ease cramps.',
               ),
               SizedBox(height: 16),
               InfoCard(
                 title: 'Health Tip',
                 content:
-                    "Include iron-rich foods to replenish your body's nutrients.",
+                "Include iron-rich foods to replenish your body's nutrients.",
               ),
-
               SizedBox(height: 32),
 
-              // ─── Reminder & Summary Row ──────────────────────────────────
+              // Upcoming & Last Period Info
               Row(
                 children: [
                   Expanded(
                     child: InfoCard(
                       title: 'Reminder',
-                      content: 'Upcoming Period\n(Days)',
+                      content: _daysUntilNextPeriod != null
+                          ? 'Upcoming Period\nin $_daysUntilNextPeriod days'
+                          : 'Upcoming Period\nUnavailable',
                       minHeight: 100,
                     ),
                   ),
@@ -105,8 +120,9 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: InfoCard(
                       title: 'Summary',
-                      // replace with an icon if you like
-                      content: '😔 Last Period\n(Date)',
+                      content: _lastPeriodText != null
+                          ? 'Last Period\n$_lastPeriodText'
+                          : 'Last Period\nUnavailable',
                       minHeight: 100,
                     ),
                   ),

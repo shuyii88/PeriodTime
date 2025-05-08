@@ -3,7 +3,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+//import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -24,6 +24,10 @@ class ProfileRepository {
   String? imagePath;
   File? newImageFile;
 
+  int? cycleLength;
+  int? periodLength;
+  DateTime? lastPeriodDate;
+
   Future<void> pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null) {
@@ -35,30 +39,88 @@ class ProfileRepository {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    final doc = await FirebaseFirestore.instance.collection('User').doc(uid).get();
+    final doc =
+        await FirebaseFirestore.instance.collection('User').doc(uid).get();
     if (!doc.exists) return;
 
     final data = doc.data()!;
     usernameController.text = data['username'] ?? '';
-    phoneController.text    = data['phone'] ?? '';
-    emailController.text    = data['email'] ?? '';
-    gender                  = data['gender'];
-    dob                     = data['dob'] != null ? DateTime.parse(data['dob']) : null;
-    imagePath               = data['imagePath'];
+    phoneController.text = data['phone'] ?? '';
+    emailController.text = data['email'] ?? '';
+    gender = data['gender'];
+    dob = data['dob'] != null ? DateTime.parse(data['dob']) : null;
+    imagePath = data['imagePath'];
   }
 
   Future<void> saveProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
+
+
     final updates = {
       'username': usernameController.text.trim(),
-      'phone':    phoneController.text.trim(),
-      'gender':   gender,
-      'dob':      dob?.toIso8601String(),
+      'phone': phoneController.text.trim(),
+      'gender': gender,
+      'dob': dob?.toIso8601String(),
       if (newImageFile != null) 'imagePath': newImageFile!.path,
     };
 
-    await FirebaseFirestore.instance.collection('User').doc(uid).update(updates);
+    await FirebaseFirestore.instance
+        .collection('User')
+        .doc(uid)
+        .update(updates);
+  }
+
+  Future<void> loadPeriodData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('PeriodData')
+            .doc(uid)
+            .get();
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    cycleLength = data['cycleLength'] ?? 0;
+    periodLength = data['periodLength'] ?? 0;
+    lastPeriodDate =
+        data['lastPeriodDate'] != null ? DateTime.parse(data['lastPeriodDate']) : null;
+    ;
+  }
+
+
+  Future<void> savePeriodData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final docRef = FirebaseFirestore.instance.collection('PeriodData').doc(uid);
+    final doc = await docRef.get();
+
+    final data = {
+      'cycleLength': cycleLength ?? 0,
+      'periodLength': periodLength ?? 0,
+      'lastPeriodDate': lastPeriodDate?.toIso8601String() ?? '',
+    };
+
+    if (!doc.exists) {
+      await docRef.set(data); // Creates document if it doesn't exist
+    } else {
+      await docRef.update(data); // Updates existing document
+    }
+  }
+
+  Future<void> clearUserData() async {
+    usernameController.text = '';
+    phoneController.text = '';
+    emailController.text = '';
+    gender = null;
+    dob = null;
+    imagePath = null;
+    cycleLength = null;
+    periodLength = null;
+    lastPeriodDate = null;
   }
 }

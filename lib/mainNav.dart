@@ -26,6 +26,9 @@ class _MainNavState extends State<MainNav> {
   @override
   void initState() {
     super.initState();
+    _profileRepository.clearUserData().then(
+      (_) => _profileRepository.loadPeriodData(),
+    );
     _profileRepository.loadUserData().then((_) => setState(() => isLoading = false));
   }
 
@@ -43,14 +46,21 @@ class _MainNavState extends State<MainNav> {
         type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Tracker'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Insights'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Tracker',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Insights',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
         onTap: (i) => setState(() => _currentIndex = i),
       ),
     );
   }
 }
-
-
