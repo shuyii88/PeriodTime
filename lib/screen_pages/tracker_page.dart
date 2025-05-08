@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 //import 'package:periodtime/setting_page.dart';
-import 'profile_repository.dart';
+import '../repositories/profile_repository.dart';
 import 'package:intl/intl.dart';
 
 class TrackerPage extends StatefulWidget {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:periodtime/webview_page.dart';
+import 'package:periodtime/screen_pages/webview_page.dart';
 
 class InsightsPage extends StatelessWidget {
   final Map<String, List<Insight>> categorizedInsights = {

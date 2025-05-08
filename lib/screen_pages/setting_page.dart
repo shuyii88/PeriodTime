@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'profile_repository.dart';
+import 'package:periodtime/repositories/profile_repository.dart';
 
 class SettingPage extends StatefulWidget {
   @override

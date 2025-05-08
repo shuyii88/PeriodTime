@@ -1,21 +1,28 @@
-//import 'dart:io';
+// lib/pages/home_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-//import 'tracker_page.dart';
-import 'profile_repository.dart';
 
+import '../repositories/advice_repository.dart';
+import '../repositories/profile_repository.dart';
 
 class HomePage extends StatefulWidget {
+  final void Function(int) onTabChanged;
+  const HomePage({Key? key, required this.onTabChanged}) : super(key: key);
+
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   final _profileRepository = ProfileRepository.instance;
+  final _adviceRepo = AdviceRepository.instance;
 
   int? _daysUntilNextPeriod;
   String? _lastPeriodText;
+  CyclePhase? _currentPhase;
+  String _todayAdvice = '';
+  String _healthTip = '';
 
   @override
   void initState() {
@@ -26,15 +33,30 @@ class _HomePageState extends State<HomePage> {
   void _loadPredictionInfo() {
     final lastPeriod = _profileRepository.lastPeriodDate;
     final cycleLength = _profileRepository.cycleLength;
+    final periodLength = _profileRepository.periodLength;
 
-    if (lastPeriod != null && cycleLength != null) {
-      final nextPeriod = lastPeriod.add(Duration(days: cycleLength));
+    if (lastPeriod != null && cycleLength != null && periodLength != null) {
       final now = DateTime.now();
+      final nextPeriod = lastPeriod.add(Duration(days: cycleLength));
       final daysLeft = nextPeriod.difference(now).inDays;
+
+      // Determine phase
+      final phase = _adviceRepo.determinePhase(
+        lastPeriod: lastPeriod,
+        cycleLength: cycleLength,
+        periodLength: periodLength,
+      );
+
+      // Fetch random advice and tip for today
+      final advice = _adviceRepo.getRandomAdvice(phase);
+      final tip    = _adviceRepo.getRandomTip(phase);
 
       setState(() {
         _daysUntilNextPeriod = daysLeft;
         _lastPeriodText = DateFormat.yMMMMd().format(lastPeriod);
+        _currentPhase = phase;
+        _todayAdvice = advice;
+        _healthTip = tip;
       });
     }
   }
@@ -52,17 +74,49 @@ class _HomePageState extends State<HomePage> {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: SingleChildScrollView(
-          child: Column(
+          child: _profileRepository.lastPeriodDate == null ||
+              _profileRepository.cycleLength == null
+              ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 48),
+              Center(
+                child: Text(
+                  "To begin tracking your cycle,\nplease set up your data on the Tracker page.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ),
+              SizedBox(height: 24),
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: () => widget.onTabChanged(1),
+                  icon: Icon(Icons.open_in_new),
+                  label: Text("Go to Tracker"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pinkAccent,
+                  ),
+                ),
+              ),
+            ],
+          )
+              : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 24),
               Text(
                 'Welcome, ${_profileRepository.usernameController.text}!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey[900]),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[900],
+                ),
               ),
               SizedBox(height: 24),
-
-              // Circle displaying days left
+              // Next Period Circle
               Center(
                 child: Container(
                   width: 180,
@@ -74,10 +128,18 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('Next Period In', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      Text(
+                        'Next Period In',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
                       SizedBox(height: 8),
                       Text(
-                        _daysUntilNextPeriod != null ? '$_daysUntilNextPeriod Days' : '--',
+                        _daysUntilNextPeriod != null
+                            ? '$_daysUntilNextPeriod Days'
+                            : '--',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -90,29 +152,31 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 32),
 
-              // Tips
+              // Today's Advice & Health Tip
               InfoCard(
                 title: "Today's Advice",
-                content:
-                'Stay hydrated and incorporate light exercises into your routine to ease cramps.',
+                content: _todayAdvice,
               ),
               SizedBox(height: 16),
               InfoCard(
                 title: 'Health Tip',
-                content:
-                "Include iron-rich foods to replenish your body's nutrients.",
+                content: _healthTip,
               ),
               SizedBox(height: 32),
 
-              // Upcoming & Last Period Info
+              // Reminder & Summary
               Row(
                 children: [
                   Expanded(
                     child: InfoCard(
                       title: 'Reminder',
-                      content: _daysUntilNextPeriod != null
-                          ? 'Upcoming Period\nin $_daysUntilNextPeriod days'
-                          : 'Upcoming Period\nUnavailable',
+                      content: _currentPhase != null
+                          ? _currentPhase == CyclePhase.period
+                          ? 'Today is a period day.'
+                          : _currentPhase == CyclePhase.fertile
+                          ? 'Today is a fertile window.'
+                          : 'Today is a safe day.'
+                          : 'Cycle status unavailable',
                       minHeight: 100,
                     ),
                   ),
@@ -120,15 +184,12 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: InfoCard(
                       title: 'Summary',
-                      content: _lastPeriodText != null
-                          ? 'Last Period\n$_lastPeriodText'
-                          : 'Last Period\nUnavailable',
+                      content: 'Last Period\n$_lastPeriodText',
                       minHeight: 100,
                     ),
                   ),
                 ],
               ),
-
               SizedBox(height: 24),
             ],
           ),
@@ -172,10 +233,7 @@ class InfoCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 8),
-          Text(
-            content,
-            style: TextStyle(fontSize: 14, color: Colors.black),
-          ),
+          Text(content, style: TextStyle(fontSize: 14, color: Colors.black)),
         ],
       ),
     );
