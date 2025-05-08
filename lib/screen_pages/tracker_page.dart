@@ -197,7 +197,7 @@ class _TrackerPageState extends State<TrackerPage> {
             children: [
               SizedBox(height: 24),
               Text(
-                'Welcome, ${_profileRepository.usernameController.text}!',
+                'Track Em\' Cycles, ${_profileRepository.usernameController.text}!',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey[900]),
               ),
               SizedBox(height: 24),
