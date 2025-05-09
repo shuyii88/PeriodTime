@@ -3,7 +3,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -23,6 +23,7 @@ class ProfileRepository {
   DateTime? dob;
   String? imagePath;
   File? newImageFile;
+  String? imageUrl;
 
   int? cycleLength;
   int? periodLength;
@@ -49,12 +50,21 @@ class ProfileRepository {
     emailController.text = data['email'] ?? '';
     gender = data['gender'];
     dob = data['dob'] != null ? DateTime.parse(data['dob']) : null;
-    imagePath = data['imagePath'];
+    imagePath = data['imageUrl'];
   }
 
   Future<void> saveProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
+
+    // Upload the image to Firebase Storage if there's a new one
+    if (newImageFile != null) {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_images/$uid.jpg');
+      await storageRef.putFile(newImageFile!);
+      imageUrl = await storageRef.getDownloadURL();
+    }
 
 
 
@@ -63,7 +73,7 @@ class ProfileRepository {
       'phone': phoneController.text.trim(),
       'gender': gender,
       'dob': dob?.toIso8601String(),
-      if (newImageFile != null) 'imagePath': newImageFile!.path,
+    'imageUrl': imageUrl,
     };
 
     await FirebaseFirestore.instance
@@ -119,6 +129,7 @@ class ProfileRepository {
     gender = null;
     dob = null;
     imagePath = null;
+    imageUrl = null;
     cycleLength = null;
     periodLength = null;
     lastPeriodDate = null;

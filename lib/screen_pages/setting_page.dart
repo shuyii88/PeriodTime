@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:periodtime/repositories/profile_repository.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingPage extends StatefulWidget {
   @override
@@ -26,52 +27,52 @@ class _SettingPageState extends State<SettingPage> {
       context: context,
       builder:
           (_) => AlertDialog(
-            title: Text("Change Password"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: currentPasswordController,
-                  decoration: InputDecoration(labelText: "Current Password"),
-                  obscureText: true,
-                ),
-                TextField(
-                  controller: newPasswordController,
-                  decoration: InputDecoration(labelText: "New Password"),
-                  obscureText: true,
-                ),
-              ],
+        title: Text("Change Password"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: currentPasswordController,
+              decoration: InputDecoration(labelText: "Current Password"),
+              obscureText: true,
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  try {
-                    final user = FirebaseAuth.instance.currentUser;
-                    final cred = EmailAuthProvider.credential(
-                      email: user!.email!,
-                      password: currentPasswordController.text,
-                    );
-                    await user.reauthenticateWithCredential(cred);
-                    await user.updatePassword(newPasswordController.text);
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Password updated successfully")),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Failed to update password: $e")),
-                    );
-                  }
-                },
-                child: Text("Update"),
-              ),
-            ],
+            TextField(
+              controller: newPasswordController,
+              decoration: InputDecoration(labelText: "New Password"),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Cancel"),
           ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final user = FirebaseAuth.instance.currentUser;
+                final cred = EmailAuthProvider.credential(
+                  email: user!.email!,
+                  password: currentPasswordController.text,
+                );
+                await user.reauthenticateWithCredential(cred);
+                await user.updatePassword(newPasswordController.text);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Password updated successfully")),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Failed to update password: $e")),
+                );
+              }
+            },
+            child: Text("Update"),
+          ),
+        ],
+      ),
     );
   }
 
@@ -181,12 +182,12 @@ class _SettingPageState extends State<SettingPage> {
               child: CircleAvatar(
                 radius: 60,
                 backgroundImage:
-                    _profileRepository.newImageFile != null
-                        ? FileImage(_profileRepository.newImageFile!)
-                        : (_profileRepository.imagePath != null &&
-                                File(_profileRepository.imagePath!).existsSync()
-                            ? FileImage(File(_profileRepository.imagePath!))
-                            : AssetImage('assets/image.jpeg') as ImageProvider),
+                _profileRepository.newImageFile != null
+                    ? FileImage(_profileRepository.newImageFile!)
+                    : (_profileRepository.imageUrl != null &&
+                    _profileRepository.imageUrl!.isNotEmpty
+                    ? NetworkImage(_profileRepository.imageUrl!)
+                    : AssetImage('assets/image.jpeg') as ImageProvider),
               ),
             ),
             SizedBox(height: 20),
@@ -208,9 +209,9 @@ class _SettingPageState extends State<SettingPage> {
               value: _profileRepository.gender,
               decoration: InputDecoration(labelText: 'Gender'),
               items:
-                  ['Male', 'Female']
-                      .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                      .toList(),
+              ['Male', 'Female']
+                  .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                  .toList(),
               onChanged:
                   (value) => setState(() => _profileRepository.gender = value),
             ),

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   @override
@@ -74,14 +75,21 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      final imagePath = imageFile!.path;
+
+      // Upload image to Firebase Storage
+      String imageUrl = '';
+      if (imageFile != null) {
+        final storageRef = FirebaseStorage.instance.ref().child('profile_images/$uid.jpg');
+        await storageRef.putFile(imageFile!);
+        imageUrl = await storageRef.getDownloadURL();
+      }
 
       await FirebaseFirestore.instance.collection('User').doc(uid).set({
         'username': usernameController.text.trim(),
         'phone': phoneController.text.trim(),
         'gender': selectedGender,
         'dob': selectedDOB!.toIso8601String(),
-        'imagePath': imagePath,
+        'imageUrl': imageUrl,
         'email': FirebaseAuth.instance.currentUser!.email,
       });
 
