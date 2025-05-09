@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:periodtime/repositories/profile_repository.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingPage extends StatefulWidget {
@@ -11,13 +11,82 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
-  final _profileRepository = ProfileRepository.instance;
-  bool isLoading = true;
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
+  String? gender;
+  DateTime? dob;
+  String? imagePath;
+  File? newImageFile;
+
+  bool isLoading = true;
   bool notificationsEnabled = true;
   final TextEditingController feedbackController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+  }
 
+  Future<void> loadUserData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc = await FirebaseFirestore.instance.collection('User').doc(uid).get();
+    if (doc.exists) {
+      final data = doc.data()!;
+      setState(() {
+        usernameController.text = data['username'] ?? '';
+        phoneController.text = data['phone'] ?? '';
+        emailController.text = data['email'] ?? '';
+        gender = data['gender'] ?? '';
+        dob = DateTime.tryParse(data['dob'] ?? '');
+        imagePath = data['imagePath'];
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => newImageFile = File(picked.path));
+    }
+  }
+
+  Future<void> saveChanges() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    String? updatedImageUrl = imagePath;
+
+    if (newImageFile != null) {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('user_images/${uid}_${DateTime.now().millisecondsSinceEpoch}');
+      final uploadTask = await storageRef.putFile(newImageFile!);
+      updatedImageUrl = await uploadTask.ref.getDownloadURL();
+    }
+
+    await FirebaseFirestore.instance.collection('User').doc(uid).update({
+      'username': usernameController.text.trim(),
+      'phone': phoneController.text.trim(),
+      'gender': gender,
+      'dob': dob?.toIso8601String(),
+      'imagePath': updatedImageUrl,
+    });
+
+    setState(() {
+      imagePath = updatedImageUrl;
+      newImageFile = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Profile updated")),
+    );
+  }
 
   Future<void> changePassword() async {
     final currentPasswordController = TextEditingController();
@@ -25,8 +94,7 @@ class _SettingPageState extends State<SettingPage> {
 
     await showDialog(
       context: context,
-      builder:
-          (_) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: Text("Change Password"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -44,10 +112,7 @@ class _SettingPageState extends State<SettingPage> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
@@ -90,14 +155,9 @@ class _SettingPageState extends State<SettingPage> {
     });
 
     feedbackController.clear();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Feedback submitted. Thank you!')));
-  }
-
-  void logout() async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushReplacementNamed(context, '/login');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Feedback submitted. Thank you!')),
+    );
   }
 
   void deleteAccount() async {
@@ -106,35 +166,20 @@ class _SettingPageState extends State<SettingPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text("Are you sure?"),
-          content: Text(
-            "This action will delete your account permanently. You cannot undo this action.",
-          ),
+          content: Text("This will permanently delete your account."),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancel"),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
             TextButton(
               onPressed: () async {
                 final navigator = Navigator.of(context);
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-                navigator.pop(); // Close the dialog
-
+                navigator.pop();
                 try {
                   final user = FirebaseAuth.instance.currentUser;
                   final uid = user?.uid;
-
                   if (uid != null) {
-                    await FirebaseFirestore.instance
-                        .collection('User')
-                        .doc(uid)
-                        .delete();
+                    await FirebaseFirestore.instance.collection('User').doc(uid).delete();
                     await user!.delete();
-
-                    // Avoid using context after an async gap
                     navigator.pushReplacementNamed('/login');
                   }
                 } catch (e) {
@@ -151,95 +196,89 @@ class _SettingPageState extends State<SettingPage> {
     );
   }
 
-  Future<void> saveChanges() async {
-    await _profileRepository.saveProfile();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Profile updated")));
-  }
-
   @override
   Widget build(BuildContext context) {
-    //if (isLoading) return Center(child: CircularProgressIndicator());
+    if (isLoading) return Center(child: CircularProgressIndicator());
 
     return Scaffold(
-      backgroundColor: Colors.pink[50],
+      backgroundColor: Colors.pink[100],
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text("Settings", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.pink[100],
-        leading: Icon(Icons.settings, color: Colors.black), //add Icon
+        title: Text("Settings"),
+        backgroundColor: Colors.deepPurple,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             GestureDetector(
-              onTap: () async {
-                await _profileRepository.pickImage();
-                setState(() {});
-              },
+              onTap: pickImage,
               child: CircleAvatar(
                 radius: 60,
-                backgroundImage:
-                _profileRepository.newImageFile != null
-                    ? FileImage(_profileRepository.newImageFile!)
-                    : (_profileRepository.imageUrl != null &&
-                    _profileRepository.imageUrl!.isNotEmpty
-                    ? NetworkImage(_profileRepository.imageUrl!)
-                    : AssetImage('assets/image.jpeg') as ImageProvider),
+                backgroundImage: newImageFile != null
+                    ? FileImage(newImageFile!)
+                    : (imagePath != null
+                    ? NetworkImage(imagePath!) as ImageProvider
+                    : AssetImage('assets/images/placeholder.png')),
               ),
             ),
             SizedBox(height: 20),
             TextField(
-              controller: _profileRepository.usernameController,
+              controller: usernameController,
               decoration: InputDecoration(labelText: 'Username'),
             ),
             TextField(
-              controller: _profileRepository.emailController,
+              controller: emailController,
               enabled: false,
               decoration: InputDecoration(labelText: 'Email'),
             ),
             TextField(
-              controller: _profileRepository.phoneController,
+              controller: phoneController,
               decoration: InputDecoration(labelText: 'Phone'),
               keyboardType: TextInputType.phone,
             ),
             DropdownButtonFormField<String>(
-              value: _profileRepository.gender,
+              value: gender,
               decoration: InputDecoration(labelText: 'Gender'),
-              items:
-              ['Male', 'Female']
+              items: ['Male', 'Female']
                   .map((g) => DropdownMenuItem(value: g, child: Text(g)))
                   .toList(),
-              onChanged:
-                  (value) => setState(() => _profileRepository.gender = value),
+              onChanged: (value) => setState(() => gender = value),
             ),
             SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Date of Birth: ${_profileRepository.dob != null ? _profileRepository.dob!.toLocal().toString().split(' ')[0] : 'Not set'}",
+                  "Date of Birth: ${dob != null ? dob!.toLocal().toString().split(' ')[0] : 'Not set'}",
                   style: TextStyle(fontSize: 16),
                 ),
                 ElevatedButton(
                   onPressed: () async {
                     final pickedDate = await showDatePicker(
                       context: context,
-                      initialDate: _profileRepository.dob ?? DateTime(2000),
+                      initialDate: dob ?? DateTime(2000),
                       firstDate: DateTime(1900),
                       lastDate: DateTime.now(),
                     );
-                    if (pickedDate != null) {
-                      setState(() => _profileRepository.dob = pickedDate);
-                    }
+                    if (pickedDate != null) setState(() => dob = pickedDate);
                   },
                   child: Text('Edit DOB'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),
-            ElevatedButton(onPressed: saveChanges, child: Text("Save Changes")),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: saveChanges,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+              ),
+              child: Text("Save Changes"),
+            ),
             ElevatedButton(
               onPressed: changePassword,
               style: ElevatedButton.styleFrom(
@@ -248,9 +287,7 @@ class _SettingPageState extends State<SettingPage> {
               ),
               child: Text("Change Password"),
             ),
-
             Divider(height: 40),
-
             SwitchListTile(
               title: Text("Enable Notifications"),
               value: notificationsEnabled,
@@ -260,9 +297,7 @@ class _SettingPageState extends State<SettingPage> {
                 });
               },
             ),
-
             SizedBox(height: 20),
-
             Text("Feedback", style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(
               controller: feedbackController,
@@ -273,7 +308,6 @@ class _SettingPageState extends State<SettingPage> {
               ),
             ),
             SizedBox(height: 10),
-
             ElevatedButton(
               onPressed: submitFeedback,
               style: ElevatedButton.styleFrom(
@@ -282,23 +316,15 @@ class _SettingPageState extends State<SettingPage> {
               ),
               child: Text("Submit Feedback"),
             ),
-
             SizedBox(height: 30),
-
-            // Logout Button
             ElevatedButton(
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-                Navigator.pushReplacementNamed(context, '/login');
-              },
+              onPressed: logout,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
               ),
               child: Text("Logout"),
             ),
-
-            // Delete Account Button
             ElevatedButton(
               onPressed: deleteAccount,
               style: ElevatedButton.styleFrom(
@@ -311,5 +337,10 @@ class _SettingPageState extends State<SettingPage> {
         ),
       ),
     );
+  }
+
+  void logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacementNamed(context, '/login');
   }
 }

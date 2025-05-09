@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class CompleteProfilePage extends StatefulWidget {
@@ -18,25 +17,6 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   DateTime? selectedDOB;
   File? imageFile;
   bool isSaving = false;
-
-  Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      final directory = await getApplicationDocumentsDirectory();
-      final imageDir = Directory('${directory.path}/image');
-
-      if (!await imageDir.exists()) {
-        await imageDir.create(recursive: true);
-      }
-
-      final imagePath = '${imageDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final File localImage = File(imagePath);
-      await localImage.writeAsBytes(await picked.readAsBytes());
-
-      setState(() => imageFile = localImage);
-    }
-  }
 
   bool validateInputs() {
     final name = usernameController.text.trim();
@@ -68,6 +48,16 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     return true;
   }
 
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
   Future<void> saveProfile() async {
     if (!validateInputs()) return;
 
@@ -75,21 +65,23 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
+      final imagePath = imageFile!.path;
 
       // Upload image to Firebase Storage
-      String imageUrl = '';
-      if (imageFile != null) {
-        final storageRef = FirebaseStorage.instance.ref().child('profile_images/$uid.jpg');
-        await storageRef.putFile(imageFile!);
-        imageUrl = await storageRef.getDownloadURL();
-      }
+      final storageRef = FirebaseStorage.instance.ref().child('user_images/${uid}_${DateTime.now().millisecondsSinceEpoch}');
+      final uploadTask = storageRef.putFile(imageFile!);
 
+      // Wait for the upload to complete and get the download URL
+      final snapshot = await uploadTask;
+      final imageUrl = await snapshot.ref.getDownloadURL();
+
+      // Save user information in Firestore
       await FirebaseFirestore.instance.collection('User').doc(uid).set({
         'username': usernameController.text.trim(),
         'phone': phoneController.text.trim(),
         'gender': selectedGender,
         'dob': selectedDOB!.toIso8601String(),
-        'imageUrl': imageUrl,
+        'imagePath': imageUrl,  // Store the download URL of the image
         'email': FirebaseAuth.instance.currentUser!.email,
       });
 
