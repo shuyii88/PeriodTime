@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:periodtime/screen_pages/webview_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class InsightsPage extends StatefulWidget {
   const InsightsPage({Key? key}) : super(key: key);
@@ -28,10 +29,13 @@ class _InsightsPageState extends State<InsightsPage> {
       final category = data['category'] ?? 'Other';
 
       final insight = Insight(
+        docId: doc.id,
         title: data['title'] ?? '',
         summary: data['summary'] ?? '',
         url: data['url'] ?? '',
         icon: Insight.getIconFromName(data['iconName'] ?? 'lightbulb_outline'),
+        like: data['like'] ?? 0,
+        view: data['view'] ?? 0,
       );
 
       categorized.putIfAbsent(category, () => []).add(insight);
@@ -57,7 +61,12 @@ class _InsightsPageState extends State<InsightsPage> {
           );
         } else {
           final categorizedInsights = snapshot.data!;
-          final tabs = categorizedInsights.keys.toList();
+          final tabs = categorizedInsights.keys.toList()
+            ..sort((a, b) {
+              if (a == 'Overview') return -1;
+              if (b == 'Overview') return 1;
+              return a.compareTo(b);
+            });
 
           return DefaultTabController(
             length: tabs.length,
@@ -94,13 +103,42 @@ class _InsightsPageState extends State<InsightsPage> {
 
 
 class Insight {
+  final String docId;
   final String title;
   final String summary;
   final String url;
   final IconData icon;
+  int like;
+  int view;
 
   Insight(
-      {required this.title, required this.summary, required this.url, required this.icon});
+      {required this.docId, required this.title, required this.summary, required this.url, required this.icon, this.like = 0, this.view = 0});
+
+  Future<void> incrementLike() async {
+    FirebaseFirestore.instance.collection('insights').doc(docId).update({
+      'like': FieldValue.increment(1),
+    });
+  }
+
+  Future<void> incrementView() async {
+    FirebaseFirestore.instance.collection('insights').doc(docId).update({
+      'view': FieldValue.increment(1),
+    });
+  }
+
+  Future<bool> hasUserLiked() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return false;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('insights')
+        .doc(docId)
+        .collection('likes')
+        .doc(uid)
+        .get();
+
+    return doc.exists;
+  }
 
   String get iconName =>
       _iconNameMap.entries
@@ -121,6 +159,8 @@ class Insight {
       'url': url,
       'category': category,
       'iconName': iconName,
+      'like': like,
+      'view': view,
     };
   }
 
@@ -147,11 +187,82 @@ class Insight {
   };
 }
 
-class InsightCard extends StatelessWidget {
+class InsightCard extends StatefulWidget {
   final Insight insight;
   final String category;
 
   InsightCard({required this.insight, required this.category});
+
+  @override
+  _InsightCardState createState() => _InsightCardState();
+}
+
+class _InsightCardState extends State<InsightCard> {
+  late int like;
+  late int view;
+  bool hasLiked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    like = widget.insight.like;
+    view = widget.insight.view;
+
+    widget.insight.hasUserLiked().then((liked) {
+      setState(() {
+        hasLiked = liked;
+      });
+    });
+  }
+
+  Future<void> likeOnce() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final insightRef = FirebaseFirestore.instance
+        .collection('insights')
+        .doc(widget.insight.docId);
+
+    final likeDocRef = insightRef
+        .collection('likes')
+        .doc(uid);
+
+    return FirebaseFirestore.instance.runTransaction((transaction) async {
+      // Check if user has liked
+      final likeDoc = await transaction.get(likeDocRef);
+      final insightDoc = await transaction.get(insightRef);
+
+      if (!insightDoc.exists) {
+        throw Exception('Insight document does not exist!');
+      }
+
+      final currentLikes = insightDoc.data()?['like'] ?? 0;
+
+      if (likeDoc.exists) {
+        // User has already liked, so unlike
+        transaction.delete(likeDocRef);
+        transaction.update(insightRef, {'like': currentLikes - 1});
+
+        // Update local state after transaction completes
+        setState(() {
+          like -= 1;
+          hasLiked = false;
+        });
+      } else {
+        // User has not liked, so add like
+        transaction.set(likeDocRef, {'likedAt': FieldValue.serverTimestamp()});
+        transaction.update(insightRef, {'like': currentLikes + 1});
+
+        // Update local state after transaction completes
+        setState(() {
+          like += 1;
+          hasLiked = true;
+        });
+      }
+    }).catchError((error) {
+      print('Transaction failed: $error');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +285,7 @@ class InsightCard extends StatelessWidget {
             ),
             child: Center(
               child: Icon(
-                insight.icon,
+                widget.insight.icon,
                 size: 64,
                 color: Colors.white,
               ),
@@ -185,23 +296,36 @@ class InsightCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(insight.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple)),
+                Text(widget.insight.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple)),
                 SizedBox(height: 8),
-                Text(insight.summary, style: TextStyle(fontSize: 14)),
+                Text(widget.insight.summary, style: TextStyle(fontSize: 14)),
                 SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    await widget.insight.incrementView();
+                    setState(() => view += 1);
                     Navigator.push(
                       context,
-                        MaterialPageRoute(
+                      MaterialPageRoute(
                         builder: (context) => WebViewPage(
-                      url: insight.url,
-                      title: insight.title,
+                          url: widget.insight.url,
+                          title: widget.insight.title,
                         ),
                       ),
                     );
                   },
                   child: Text('Read More'),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      onPressed: likeOnce,
+                      icon: Icon(Icons.thumb_up,color: hasLiked ? Colors.red : Colors.black,),
+                    ),
+                    Text('Likes: $like'),
+                    Text('Views: $view'),
+                  ],
                 ),
               ],
             ),
