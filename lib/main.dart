@@ -7,14 +7,16 @@ import 'package:periodtime/screen_pages/login_page.dart';
 import 'screen_pages/complete_profile_page.dart';
 import 'package:periodtime/screen_pages/setting_page.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    print("Error initializing Firebase: $e");
-  }
+  await Firebase.initializeApp();
+
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.playIntegrity, // Using Play Integrity for Android
+  );
+
   runApp(PeriodTimeApp());
 }
 

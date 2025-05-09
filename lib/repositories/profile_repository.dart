@@ -73,7 +73,7 @@ class ProfileRepository {
       'phone': phoneController.text.trim(),
       'gender': gender,
       'dob': dob?.toIso8601String(),
-    'imageUrl': imageUrl,
+      'imageUrl': imageUrl,
     };
 
     await FirebaseFirestore.instance
