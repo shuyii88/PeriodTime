@@ -21,7 +21,7 @@ class _SettingPageState extends State<SettingPage> {
   File? newImageFile;
 
   bool isLoading = true;
-  bool notificationsEnabled = true;
+  //bool notificationsEnabled = true;
   final TextEditingController feedbackController = TextEditingController();
 
   @override
@@ -291,16 +291,16 @@ class _SettingPageState extends State<SettingPage> {
               child: Text("Change Password"),
             ),
             Divider(height: 40),
-            SwitchListTile(
-              title: Text("Enable Notifications"),
-              value: notificationsEnabled,
-              onChanged: (bool value) {
-                setState(() {
-                  notificationsEnabled = value;
-                });
-              },
-            ),
-            SizedBox(height: 20),
+            // SwitchListTile(
+            //   title: Text("Enable Notifications"),
+            //   value: notificationsEnabled,
+            //   onChanged: (bool value) {
+            //     setState(() {
+            //       notificationsEnabled = value;
+            //     });
+            //   },
+            // ),
+            //SizedBox(height: 20),
             Text("Feedback", style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(
               controller: feedbackController,
