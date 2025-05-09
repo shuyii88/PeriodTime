@@ -36,6 +36,16 @@ class _TrackerPageState extends State<TrackerPage> {
   Future<void> _initializeData() async {
     await _loadSavedData();
     _calculateDates();
+
+    // Auto-update last period if cycle has ended
+    if (_nextPeriod != null && DateTime.now().isAfter(_nextPeriod!)) {
+      setState(() {
+        _lastPeriodDate = _nextPeriod;
+        _profileRepository.lastPeriodDate = _nextPeriod;
+      });
+      await _saveChanges();
+      _calculateDates();
+    }
   }
 
   Future<void> _loadSavedData() async {
@@ -86,7 +96,8 @@ class _TrackerPageState extends State<TrackerPage> {
       int cycleLength = int.parse(_cycleLengthController.text);
       int periodLength = int.parse(_periodLengthController.text);
 
-      DateTime ovulation = _lastPeriodDate!.add(Duration(days: cycleLength - 14));
+      DateTime ovulation =
+      _lastPeriodDate!.add(Duration(days: cycleLength - 14));
       DateTime nextPeriod = _lastPeriodDate!.add(Duration(days: cycleLength));
 
       DateTime fertileStart = ovulation.subtract(Duration(days: 5));
