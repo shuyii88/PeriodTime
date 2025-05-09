@@ -23,6 +23,7 @@ class PeriodTimeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Period Time',
       theme: ThemeData(
         primarySwatch: Colors.purple,
