@@ -102,9 +102,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.pink[100],
+      backgroundColor: Colors.pink[50],
       appBar: AppBar(
-        backgroundColor: Colors.pink[300],
+        backgroundColor: Colors.pink[100],
         iconTheme: IconThemeData(color: Colors.black),
         title: Text(
           'Complete Profile',
